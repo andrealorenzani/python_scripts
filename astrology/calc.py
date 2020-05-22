@@ -82,9 +82,11 @@ tarocs = {
 }
 
 n_card = 0
+ZODIAC_API="https://zodiacal.herokuapp.com"
 
 import math
 import datetime
+import requests
 from dateutil.parser import parse
 from operator import le, ge
 
@@ -150,16 +152,42 @@ def extract(num_cards, shuffled, cards_dic):
         rev = 0 if randint(0,10) < 8 else 1
         print("%s: %s" % (extracted, cards_dic[extracted][rev]))
 
+def zodiac(dob):
+    resp = requests.get(ZODIAC_API + "/api")
+    dob_month = dob.strftime('%B')
+    user_sign = None
+    for zsign in resp.json():
+        st_val = zsign['sun_dates'][0].split()
+        end_val = zsign['sun_dates'][1].split()
+        if((st_val[0] == dob_month and int(st_val[1]) <= dob.day) or (end_val[0] == dob_month and int(end_val[1]) >= dob.day)):
+            user_sign = zsign
+            break
+    print("----------------------------------------------------------------------------")
+    print("The zodiac sign is %s (%s sign)" % (user_sign['name'], user_sign['element']))
+    print("Secret wishes: %s" % user_sign['secret_wish'])
+    print("Hates: %s" % user_sign['hates'])
+    print("Bad traits: %s" % user_sign['bad_traits'])
+    print("Good traits: %s" % user_sign['good_traits'])
+    print("Keywords: %s" % user_sign['keywords'])
+    print("Vibe: %s" % user_sign['vibe'])
+    print("Mental traits: %s" % user_sign['mental_traits'])
+    print("----------------------------------------------------------------------------")
+    return user_sign
+
 def main():
     print("Insert your DOB in format 'YYYY-MM-DD'")
-    your_dob = datetime.datetime.now() - parse(input())
+    date_of_birth = parse(input())
+    your_dob = datetime.datetime.now() - date_of_birth
     print("You are old %s days" % str(your_dob.days))
     print("Your best physical biorythm is in %s days, your worst is in %s days" % (max_bio(your_dob.days, physical_bio), max_bio(your_dob.days, physical_bio, le)))
     print("Your best emotional biorythm is in %s days, your worst is in %s days" % (max_bio(your_dob.days, emotional_bio), max_bio(your_dob.days, emotional_bio, le)))
     print("Your best intellectual biorythm is in %s days, your worst is in %s days" % (max_bio(your_dob.days, intellectual_bio), max_bio(your_dob.days, intellectual_bio, le)))
+    your_sign = zodiac(date_of_birth)
     print("Insert your interested person DOB in format 'YYYY-MM-DD' (return for no comparison)")
     its_dob = input()
     if len(its_dob) > 0:
+        its_sign = zodiac(parse(its_dob))
+        print("You are %s compatible with that and it is %s compatible with you" % ("" if its_sign['name'] in your_sign['compatibility'] else "not", "" if your_sign['name'] in its_sign['compatibility'] else "not"))
         its_dob = datetime.datetime.now() - parse(its_dob)
         print("His/her best physical biorythm is in %s days, the worst is in %s days" % (max_bio(its_dob.days, physical_bio), max_bio(its_dob.days, physical_bio, le)))
         print("His/her best emotional biorythm is in %s days, the worst is in %s days" % (max_bio(its_dob.days, emotional_bio), max_bio(its_dob.days, emotional_bio, le)))
